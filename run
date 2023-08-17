@@ -1,0 +1,14 @@
+#!/bin/bash
+
+PATH="${0%/*}/cross-compiler/bin:$PATH"
+
+i686-elf-gcc -Wall -c -ffreestanding -lgcc                             -o obj/boot.o    src/boot.s 
+i686-elf-gcc -Wall -c -ffreestanding -lgcc                             -o obj/kernel.o  src/kernel.c 
+i686-elf-gcc -Wall    -ffreestanding -lgcc -nostdlib -T src/linker.ld  -o obj/myos.bin  obj/boot.o obj/kernel.o
+
+mkdir -p obj/iso/boot/grub
+cp -f obj/myos.bin obj/iso/boot/myos.bin
+cp -f src/grub.cfg obj/iso/boot/grub/grub.cfg
+grub-mkrescue -o out/myos.iso obj/iso
+
+qemu-system-i386 -cdrom out/myos.iso
