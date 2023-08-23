@@ -1,0 +1,6 @@
+{
+	"C_Cpp.default.defines": [
+		"__linux__=0",
+		"__i386__=1"
+	]
+}
