@@ -1,12 +1,5 @@
 .intel_syntax noprefix
 
-/* Declare constants for the multiboot header. */
-.set ALIGN,    1<<0             /* align loaded modules on page boundaries */
-.set MEMINFO,  1<<1             /* provide memory map */
-.set FLAGS,    ALIGN | MEMINFO  /* this is the Multiboot 'flag' field */
-.set MAGIC,    0x1BADB002       /* 'magic number' lets bootloader find the header */
-.set CHECKSUM, -(MAGIC + FLAGS) /* checksum of above, to prove we are multiboot */
-
 /* 
 Declare a multiboot header that marks the program as a kernel. These are magic
 values that are documented in the multiboot standard. The bootloader will
@@ -16,9 +9,10 @@ forced to be within the first 8 KiB of the kernel file.
 */
 .section .multiboot
 .align 4
-.long MAGIC
-.long FLAGS
-.long CHECKSUM
+.long 0x1BADB002  # magic
+multiboot_flags = 0x00000000  # no flags
+.long multiboot_flags
+.long -(0x1BADB002 + multiboot_flags)  # checksum
 
 /*
 The multiboot standard does not define the value of the stack pointer register
@@ -45,7 +39,6 @@ doesn't make sense to return from this function as the bootloader is gone.
 */
 .section .text
 .global _start
-.type _start, @function
 _start:
 	/*
 	The bootloader has loaded us into 32-bit protected mode on a x86
@@ -86,7 +79,8 @@ _start:
 	stack since (pushed 0 bytes so far), so the alignment has thus been
 	preserved and the call is well defined.
 	*/
-	call kernel_main
+	#call kernel_main
+	mov dword ptr [0xb8000], 0x07690748  # prints hi
 
 	/*
 	If the system has nothing more to do, put the computer into an
@@ -101,11 +95,6 @@ _start:
 	   non-maskable interrupt occurring or due to system management mode.
 	*/
 	cli
-1:	hlt
+1:
+	hlt
 	jmp 1b
-
-/*
-Set the size of the _start symbol to the current location '.' minus its start.
-This is useful when debugging or when you implement call tracing.
-*/
-.size _start, . - _start

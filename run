@@ -1,11 +1,25 @@
 #!/bin/bash
 
 PATH="${0%/*}/cross-compiler/bin:$PATH"
+gcc() {
+	i686-elf-gcc -Wall -ffreestanding -nostdlib -lgcc $@
+}
 
-i686-elf-gcc -Wall -c -ffreestanding -lgcc                             -o obj/boot.o    src/boot.s 
-i686-elf-gcc -Wall -c -ffreestanding -lgcc                             -o obj/kernel.o  src/kernel.c 
-i686-elf-gcc -Wall    -ffreestanding -lgcc -nostdlib -T src/linker.ld  -o obj/myos.bin  obj/boot.o obj/kernel.o
+# compiling
+gcc -c  src/boot.s    -o obj/boot.o
+gcc -c  src/kernel.c  -o obj/kernel.o
 
+# linking
+gcc -T src/linker.ld  obj/boot.o obj/kernel.o  -o obj/myos.bin
+
+# testing for multiboot
+if ! grub-file --is-x86-multiboot obj/myos.bin
+then
+	echo Image is not multiboot!
+	exit
+fi
+
+# grub iso
 mkdir -p obj/iso/boot/grub
 cp -f obj/myos.bin obj/iso/boot/myos.bin
 cp -f src/grub.cfg obj/iso/boot/grub/grub.cfg
