@@ -1,16 +1,14 @@
 #!/bin/bash
 
+# setup
 PATH="${0%/*}/cross-compiler/bin:$PATH"
 gcc() {
-	i686-elf-gcc -Wall -ffreestanding -nostdlib -lgcc $@
+	i686-elf-gcc -Wall -ffreestanding -nostdlib -lgcc -ggdb $@
 }
+rm -rf obj/myos.bin obj/iso
 
-# compiling
-gcc -c  src/boot.s    -o obj/boot.o
-gcc -c  src/kernel.c  -o obj/kernel.o
-
-# linking
-gcc -T src/linker.ld  obj/boot.o obj/kernel.o  -o obj/myos.bin
+# compiling and linking
+gcc  src/boot.s  -o obj/myos.bin
 
 # testing for multiboot
 if ! grub-file --is-x86-multiboot obj/myos.bin
@@ -19,10 +17,16 @@ then
 	exit
 fi
 
+# out
+cp obj/myos.bin out/myos.bin
 # grub iso
-mkdir -p obj/iso/boot/grub
-cp -f obj/myos.bin obj/iso/boot/myos.bin
-cp -f src/grub.cfg obj/iso/boot/grub/grub.cfg
-grub-mkrescue -o out/myos.iso obj/iso
+if true
+then
+	mkdir -p obj/iso/boot/grub
+	cp -f obj/myos.bin obj/iso/boot/myos.bin
+	cp -f src/grub.cfg obj/iso/boot/grub/grub.cfg
+	grub-mkrescue -o out/myos.iso obj/iso
+fi
 
-qemu-system-i386 -cdrom out/myos.iso
+#qemu-system-i386 -d guest_errors -D qemu.log -kernel out/myos.bin
+qemu-system-i386 -d guest_errors -D qemu.log -cdrom out/myos.iso

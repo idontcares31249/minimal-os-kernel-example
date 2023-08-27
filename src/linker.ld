@@ -3,23 +3,18 @@ OUTPUT_FORMAT(elf32-i386)
 
 SECTIONS
 {
-  . = 1M;
+	. = 1M;
 
-	.multiboot : {
+	.text BLOCK(4K) : {
 		*(.multiboot)
-	}
-
-	# rest
-	.text : {
 		*(.text)
 	}
-	.rodata : {
-		*(.rodata)
-	}
-	.data : {
+
+	.data BLOCK(4K) : {
 		*(.data)
 	}
-	.bss : {
+
+	.bss BLOCK(4K) : {
 		*(COMMON)
 		*(.bss)
 	}

@@ -1,100 +1,94 @@
 .intel_syntax noprefix
 
-/* 
-Declare a multiboot header that marks the program as a kernel. These are magic
-values that are documented in the multiboot standard. The bootloader will
-search for this signature in the first 8 KiB of the kernel file, aligned at a
-32-bit boundary. The signature is in its own section so the header can be
-forced to be within the first 8 KiB of the kernel file.
-*/
-.section .multiboot
-.align 4
-.long 0x1BADB002  # magic
-multiboot_flags = 0x00000000  # no flags
-.long multiboot_flags
-.long -(0x1BADB002 + multiboot_flags)  # checksum
+# macros
+	# prints character in terminal at index
+	# ruins eax and ebx
+	.macro print_char character=' , index=0, attr=0x07 /* light grey */
+		mov ah, \attr
+		mov al, \character
+		mov ebx, \index
+		mov word ptr 0xb8000[2 * ebx], ax
+	.endm
 
-/*
-The multiboot standard does not define the value of the stack pointer register
-(esp) and it is up to the kernel to provide a stack. This allocates room for a
-small stack by creating a symbol at the bottom of it, then allocating 16384
-bytes for it, and finally creating a symbol at the top. The stack grows
-downwards on x86. The stack is in its own section so it can be marked nobits,
-which means the kernel file is smaller because it does not contain an
-uninitialized stack. The stack on x86 must be 16-byte aligned according to the
-System V ABI standard and de-facto extensions. The compiler will assume the
-stack is properly aligned and failure to align the stack will result in
-undefined behavior.
-*/
-.section .bss
-.align 16
-stack_bottom:
-.skip 16384 # 16 KiB
-stack_top:
+	.macro clear_screen
+		mov ecx, (80 * 24)
+	1:
+		print_char ' , ecx
+		dec ecx
+		jnz 1b
+	.endm
 
-/*
-The linker script specifies _start as the entry point to the kernel and the
-bootloader will jump to this position once the kernel has been loaded. It
-doesn't make sense to return from this function as the bootloader is gone.
-*/
+	# prints hello
+	.macro print_hello index=0
+		print_char 'h, (\index + 0)
+		print_char 'e, (\index + 1)
+		print_char 'l, (\index + 2)
+		print_char 'l, (\index + 3)
+		print_char 'o, (\index + 4)
+	.endm
+
+	.macro _print_int_round value, index, round
+		mov eax, \value
+		shr eax, (\round * 4)
+		and eax, 0x0000000f
+		cmp eax, 10
+		jge 1f
+	# < 10
+		add eax, '0
+		jmp 2f
+	# > 10
+	1:
+		add eax, ('A - 10)
+	# end if
+	2:
+		print_char al, (\index + (7 - \round))
+	.endm
+
+	# converts dword to hex and prints
+	.macro print_int value, index=0
+		_print_int_round \value, \index, 0
+		_print_int_round \value, \index, 1
+		_print_int_round \value, \index, 2
+		_print_int_round \value, \index, 3
+		_print_int_round \value, \index, 4
+		_print_int_round \value, \index, 5
+		_print_int_round \value, \index, 6
+		_print_int_round \value, \index, 7
+	.endm
+# /macros
+
 .section .text
 .global _start
+
 _start:
-	/*
-	The bootloader has loaded us into 32-bit protected mode on a x86
-	machine. Interrupts are disabled. Paging is disabled. The processor
-	state is as defined in the multiboot standard. The kernel has full
-	control of the CPU. The kernel can only make use of hardware features
-	and any code it provides as part of itself. There's no printf
-	function, unless the kernel provides its own <stdio.h> header and a
-	printf implementation. There are no security restrictions, no
-	safeguards, no debugging mechanisms, only what the kernel provides
-	itself. It has absolute and complete power over the
-	machine.
-	*/
+	mov dword ptr [0xb8000], 0x07690748
+	jmp entry
 
-	/*
-	To set up a stack, we set the esp register to point to the top of the
-	stack (as it grows downwards on x86 systems). This is necessarily done
-	in assembly as languages such as C cannot function without a stack.
-	*/
-	mov esp, stack_top
+multiboot_header:
+	.align 4
+	.long 0x1BADB002  # magic
+	multiboot_flags = 0x00000001  # flags
+	.long multiboot_flags
+	.long -(0x1BADB002 + multiboot_flags)  # checksum
 
-	/*
-	This is a good place to initialize crucial processor state before the
-	high-level kernel is entered. It's best to minimize the early
-	environment where crucial features are offline. Note that the
-	processor is not fully initialized yet: Features such as floating
-	point instructions and instruction set extensions are not initialized
-	yet. The GDT should be loaded here. Paging should be enabled here.
-	C++ features such as global constructors and exceptions will require
-	runtime support to work as well.
-	*/
+entry:
+	# setting up stack
+	mov esp, (stack + stack_size)
 
-	/*
-	Enter the high-level kernel. The ABI requires the stack is 16-byte
-	aligned at the time of the call instruction (which afterwards pushes
-	the return pointer of size 4 bytes). The stack was originally 16-byte
-	aligned above and we've pushed a multiple of 16 bytes to the
-	stack since (pushed 0 bytes so far), so the alignment has thus been
-	preserved and the call is well defined.
-	*/
-	#call kernel_main
-	mov dword ptr [0xb8000], 0x07690748  # prints hi
+	#clear_screen
 
-	/*
-	If the system has nothing more to do, put the computer into an
-	infinite loop. To do that:
-	1) Disable interrupts with cli (clear interrupt enable in eflags).
-	   They are already disabled by the bootloader, so this is not needed.
-	   Mind that you might later enable interrupts and return from
-	   kernel_main (which is sort of nonsensical to do).
-	2) Wait for the next interrupt to arrive with hlt (halt instruction).
-	   Since they are disabled, this will lock up the computer.
-	3) Jump to the hlt instruction if it ever wakes up due to a
-	   non-maskable interrupt occurring or due to system management mode.
-	*/
+	#print_int esp, (80 * 0)
+	#push 0x1234cdef
+	#pop ecx
+	#print_int ecx, (80 * 1)
+
+	# halt
 	cli
-1:
-	hlt
-	jmp 1b
+	1:
+		hlt
+		jmp 1b
+
+# stack
+	.align 16
+	stack_size = 0x4000
+	.comm stack, stack_size
