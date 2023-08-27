@@ -1,32 +1,57 @@
 #!/bin/bash
 
 # setup
-PATH="${0%/*}/cross-compiler/bin:$PATH"
+# sets up PATH to point to cross-compiler
+PATH="${PWD}/${0%/*}/cross-compiler/bin:$PATH"
 gcc() {
-	i686-elf-gcc -Wall -ffreestanding -nostdlib -lgcc -ggdb $@
+	# -Wall enables C warmings
+	# -ffrestanding is essential for OS kernels
+	# -nostdlib as we don't have it (idk why it is not assumed by -ffreestanding)
+	# -lgcc explicitly because -nostdlib turned it off (libgcc is essential for gcc to work)
+	# -ggdb as QEMU supports debugging with gdb
+	# -Ttext tells linker to start the .text segment at 1M instead of the default 0x08048000 (128.3M!). Pretty much essential for OS kernels, I think. Although it would work without it if you pass more memory to the machine. It is better to use a linker script though.
+	i686-elf-gcc -Wall -ffreestanding -nostdlib -lgcc -ggdb -Ttext=0x00100000 $@
 }
-rm -rf obj/myos.bin obj/iso
+qemu() {
+	# -d guest_errors logs when the guest OS does something invalid
+	# -D tells to put logs in a file instead of stderr
+	# You can use -m megs to pass more memory (128 by default)
+	qemu-system-i386 -d guest_errors -D log/qemu.log $@
+}
+
+# clean up
+rm -rf obj/myos.bin obj/iso out/myos.bin out/myos.iso log/qemu.log
 
 # compiling and linking
-gcc  src/boot.s  -o obj/myos.bin
+gcc  src/boot.s src/kernel.c  -o obj/myos.bin
+
+if [[ $? != 0 ]]
+then
+	echo Compilation failed!
+	exit 1
+fi
 
 # testing for multiboot
 if ! grub-file --is-x86-multiboot obj/myos.bin
 then
-	echo Image is not multiboot!
-	exit
+	echo Image is not Multiboot!
+	exit 1
 fi
 
 # out
 cp obj/myos.bin out/myos.bin
-# grub iso
-if true
+
+# put 1 to use GRUB instead of passing the kernel directly to QEMU
+use_grub=0
+if [[ $use_grub == 1 ]]
 then
+	# grub iso
 	mkdir -p obj/iso/boot/grub
 	cp -f obj/myos.bin obj/iso/boot/myos.bin
 	cp -f src/grub.cfg obj/iso/boot/grub/grub.cfg
-	grub-mkrescue -o out/myos.iso obj/iso
-fi
+	grub-mkrescue obj/iso -o out/myos.iso
 
-#qemu-system-i386 -d guest_errors -D qemu.log -kernel out/myos.bin
-qemu-system-i386 -d guest_errors -D qemu.log -cdrom out/myos.iso
+	qemu -cdrom out/myos.iso
+else
+	qemu -kernel out/myos.bin
+fi

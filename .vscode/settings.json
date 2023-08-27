@@ -2,5 +2,8 @@
 	"C_Cpp.default.defines": [
 		"__linux__=0",
 		"__i386__=1"
-	]
+	],
+	"files.associations": {
+		"stdbool.h": "c"
+	}
 }
