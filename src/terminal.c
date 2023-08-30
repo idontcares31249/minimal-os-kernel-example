@@ -1,7 +1,5 @@
 #pragma once
 
-#include <stdbool.h>
-#include <stddef.h>
 #include <stdint.h>
 
 #include "util.c"
@@ -12,7 +10,7 @@ typedef uint8_t terminal_color;
 #define terminal_color_green     0b0010
 #define terminal_color_red       0b0100
 #define terminal_color_light     0b1000
-// use can combine these to get magenta, cyan, etc
+// use can OR these to get magenta, cyan, etc
 // some more colors
 #define terminal_color_black     0b0000
 #define terminal_color_darkgrey  0b1000
@@ -32,10 +30,10 @@ struct _terminal_cell
 };
 
 // just to ensure
-_Static_assert(sizeof(struct _terminal_cell) == 2,
+static_assert(sizeof(struct _terminal_cell) == 2,
 	"vga cell must be exactly 2 bytes long");
 
-static struct _terminal_cell __terminal_cell_new(char character, terminal_color fg, terminal_color bg)
+static struct _terminal_cell _terminal_cell_new(char character, terminal_color fg, terminal_color bg)
 {
 	return (struct _terminal_cell){
 		.character = (uint8_t)character,
@@ -85,7 +83,7 @@ void terminal_putCharAt(char ch, size_t col, size_t row, terminal_color fg, term
 	// vga buffer is at address 0xb8000
 	struct _terminal_cell *const buffer = (struct _terminal_cell *)0xb8000;
 	// constructing cell
-	struct _terminal_cell cell = __terminal_cell_new(ch, fg, bg);
+	struct _terminal_cell cell = _terminal_cell_new(ch, fg, bg);
 	// calculating index
 	size_t inx = terminal_width * row + col;
 	// writing to the buffer

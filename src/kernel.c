@@ -1,5 +1,5 @@
-#include <stdbool.h>
 #include <stddef.h>
+#include <stdbool.h>
 
 #include "terminal.c"
 #include "util.c"
@@ -49,6 +49,7 @@ void main()
 	int_to_hex(0x1234cdef, buffer);
 	terminal_row = 11;
 	terminal_putString(buffer);
+
 	terminal_putString("\n\xb0\xb1\xb2");
 
 	// lgbt test
