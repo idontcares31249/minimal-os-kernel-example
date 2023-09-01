@@ -9,8 +9,7 @@ gcc() {
 	# -nostdlib as we don't have it (idk why it is not assumed by -ffreestanding)
 	# -lgcc explicitly because -nostdlib turned it off (libgcc is essential for gcc to work)
 	# -ggdb as QEMU supports debugging with gdb
-	# -Ttext tells linker to start the .text segment at 1M instead of the default 0x08048000 (128.3M!). Pretty much essential for OS kernels, I think. Although it would work without it if you pass more memory to the machine. It is better to use a linker script though.
-	i686-elf-gcc -Wall -ffreestanding -nostdlib -lgcc -ggdb -Ttext=0x00100000 $@
+	i686-elf-gcc -Wall -ffreestanding -nostdlib -lgcc -ggdb $@
 }
 qemu() {
 	# -d guest_errors logs when the guest OS does something invalid
@@ -23,7 +22,7 @@ qemu() {
 rm -rf obj/myos.bin obj/iso out/myos.bin out/myos.iso log/qemu.log
 
 # compiling and linking
-gcc  src/boot.s src/kernel.c  -o obj/myos.bin
+gcc -T src/linker.ld  src/boot.s src/kernel.c  -o obj/myos.bin
 
 if [[ $? != 0 ]]
 then
