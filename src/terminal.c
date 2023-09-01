@@ -33,7 +33,7 @@ struct _terminal_cell
 static_assert(sizeof(struct _terminal_cell) == 2,
 	"vga cell must be exactly 2 bytes long");
 
-static struct _terminal_cell _terminal_cell_new(char character, terminal_color fg, terminal_color bg)
+struct _terminal_cell _terminal_cell_new(char character, terminal_color fg, terminal_color bg)
 {
 	return (struct _terminal_cell){
 		.character = (uint8_t)character,
@@ -44,6 +44,7 @@ static struct _terminal_cell _terminal_cell_new(char character, terminal_color f
 	};
 }
 
+// by default
 const size_t terminal_width = 80;
 const size_t terminal_height = 25;
 
@@ -54,7 +55,7 @@ terminal_color terminal_background = terminal_color_black;
 
 // moves cursor based on given character
 // increments cursor, or feeds line if '\n'
-static void _terminal_moveCursor(char control)
+void _terminal_moveCursor(char control)
 {
 	if (control == '\n')
 	{

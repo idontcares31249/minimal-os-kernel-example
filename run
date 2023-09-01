@@ -1,56 +1,61 @@
 #!/bin/bash
 
 # setup
-# sets up PATH to point to cross-compiler
-PATH="${PWD}/${0%/*}/cross-compiler/bin:$PATH"
-gcc() {
-	# -Wall enables C warmings
-	# -ffrestanding is essential for OS kernels
-	# -nostdlib as we don't have it (idk why it is not assumed by -ffreestanding)
-	# -lgcc explicitly because -nostdlib turned it off (libgcc is essential for gcc to work)
-	# -ggdb as QEMU supports debugging with gdb
-	i686-elf-gcc -Wall -ffreestanding -nostdlib -lgcc -ggdb $@
-}
-qemu() {
-	# -d guest_errors logs when the guest OS does something invalid
-	# -D tells to put logs in a file instead of stderr
-	# You can use -m megs to pass more memory (128 by default)
-	qemu-system-i386 -d guest_errors -D log/qemu.log $@
-}
+	# cd to this script's directory
+	cd "${PWD}/${0%/*}"
+
+	# appends cross-compiler bin dir to the PATH variable
+		PATH="${PWD}/cross-compiler/bin:$PATH"
+		# "${PWD}/${0%/*}/cross-compiler/bin" expands to "/home/user/Programming/Projects/osdev/./cross-compiler/bin" on my machine
+
+	gcc() {
+		# -Wall enables warnings
+		# -ffrestanding is essential for OS kernels
+		# -nostdlib as we don't have it (idk why it is not assumed by -ffreestanding)
+		# -lgcc explicitly because -nostdlib turned it off (libgcc is essential for gcc to work)
+		# -ggdb as QEMU supports debugging with gdb
+		i686-elf-gcc -Wall -ffreestanding -nostdlib -lgcc -ggdb $@
+	}
+	qemu() {
+		# -d guest_errors logs when the guest OS does something invalid
+		# -D tells to put logs in a file instead of stderr
+		# You can use -m megs to pass more memory (128 by default)
+		qemu-system-i386 -d guest_errors -D log/qemu.log $@
+	}
 
 # clean up
-rm -rf obj/myos.bin obj/iso out/myos.bin out/myos.iso log/qemu.log
+	rm -rf obj/myos.bin obj/iso out/myos.bin out/myos.iso log/qemu.log
 
 # compiling and linking
-gcc -T src/linker.ld  src/boot.s src/kernel.c  -o obj/myos.bin
+	gcc  -T src/linker.ld  src/boot.s src/kernel.c  -o obj/myos.bin
 
-if [[ $? != 0 ]]
-then
-	echo Compilation failed!
-	exit 1
-fi
+	if [[ $? != 0 ]]
+	then
+		echo "Compilation failed!"
+		exit 1
+	fi
 
 # testing for multiboot
-if ! grub-file --is-x86-multiboot obj/myos.bin
-then
-	echo Image is not Multiboot!
-	exit 1
-fi
+	if ! grub-file --is-x86-multiboot obj/myos.bin
+	then
+		echo "Image is not Multiboot!"
+		exit 1
+	fi
 
 # out
-cp obj/myos.bin out/myos.bin
+	cp obj/myos.bin out/myos.bin
 
-# put 1 to use GRUB instead of passing the kernel directly to QEMU
-use_grub=0
-if [[ $use_grub == 1 ]]
-then
-	# grub iso
-	mkdir -p obj/iso/boot/grub
-	cp -f obj/myos.bin obj/iso/boot/myos.bin
-	cp -f src/grub.cfg obj/iso/boot/grub/grub.cfg
-	grub-mkrescue obj/iso -o out/myos.iso
+	# put 1 to use GRUB instead of passing the kernel directly to QEMU
+	use_grub=0
+	if [[ $use_grub == 1 ]]
+	then
+		# grub iso
+		mkdir -p obj/iso/boot/grub
+		cp -f obj/myos.bin obj/iso/boot/myos.bin
+		cp -f src/grub.cfg obj/iso/boot/grub/grub.cfg
+		grub-mkrescue obj/iso -o out/myos.iso
 
-	qemu -cdrom out/myos.iso
-else
-	qemu -kernel out/myos.bin
-fi
+		qemu -cdrom out/myos.iso
+	else
+		qemu -kernel out/myos.bin
+	fi

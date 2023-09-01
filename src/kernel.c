@@ -60,15 +60,14 @@ void main()
 	const terminal_color
 		grey = terminal_color_grey,
 		red = terminal_color_light | terminal_color_red,
-		orange = terminal_color_red | terminal_color_green,
 		yellow = terminal_color_light | terminal_color_red | terminal_color_green,
 		green = terminal_color_light | terminal_color_green,
 		blue = terminal_color_light | terminal_color_blue,
 		violet = terminal_color_light | terminal_color_red | terminal_color_blue;
-	drawRect(' '   , x, y + 0, w, 1, grey, red     );
-	drawRect('\xb0', x, y + 1, w, 1, yellow, orange);
-	drawRect(' '   , x, y + 2, w, 1, grey, yellow  );
-	drawRect(' '   , x, y + 3, w, 1, grey, green   );
-	drawRect(' '   , x, y + 4, w, 1, grey, blue    );
-	drawRect(' '   , x, y + 5, w, 1, grey, violet  );
+	drawRect(' '   , x, y + 0, w, 1, grey,   red   );
+	drawRect('\xb1', x, y + 1, w, 1, yellow, red   );
+	drawRect(' '   , x, y + 2, w, 1, grey,   yellow);
+	drawRect(' '   , x, y + 3, w, 1, grey,   green );
+	drawRect(' '   , x, y + 4, w, 1, grey,   blue  );
+	drawRect(' '   , x, y + 5, w, 1, grey,   violet);
 }

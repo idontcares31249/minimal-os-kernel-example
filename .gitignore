@@ -1,6 +1,6 @@
 cross-compiler
-obj
-out
+obj/*
+out/*
 junk
-log
+log/*
 notes.md
