@@ -19,7 +19,7 @@ void drawRect(char ch, size_t col, size_t row, size_t width, size_t height, term
 		terminal_putCharAt(ch, x, y, fg, bg);
 }
 
-void main() 
+void main()
 {
 	terminal_initialize();
 
