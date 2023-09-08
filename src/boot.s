@@ -1,6 +1,8 @@
 .intel_syntax noprefix
 
-.section .text
+.include "src/macro.s"
+
+.text
 .global _start
 
 multiboot_header:
@@ -16,6 +18,8 @@ _start:
 
 	call main
 
+	print_int (stack + stack_size)
+
 	# halt
 	cli
 	1:
@@ -23,6 +27,7 @@ _start:
 		jmp 1b
 
 # stack
+.bss
 	.align 16
-	stack_size = 0x4000
-	.comm stack, stack_size
+	stack_size = 0x4000  # 16 KiB
+	.lcomm stack, stack_size

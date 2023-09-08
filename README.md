@@ -29,4 +29,5 @@ This is a Multiboot-compliant i686 OS kernel.
 
 - [Up-to-date `ld` documentation](https://sourceware.org/binutils/docs/ld/index.html)
 - [GNU `as` directives](https://sourceware.org/binutils/docs-2.41/as/Pseudo-Ops.html)
+- [Multiboot Specification](https://www.gnu.org/software/grub/manual/multiboot/multiboot.html)
 - [Refine Google searches](https://support.google.com/websearch/answer/2466433). Pesonally, I use quotes (`"this whole term matches exactly"`), `site:` and negation (`-"this term will be removed"`) a lot
