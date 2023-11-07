@@ -83,7 +83,7 @@ void _terminal_moveCursor(char control)
 void terminal_putCharAt(char ch, size_t col, size_t row, terminal_color fg, terminal_color bg)
 {
 	// vga buffer is at address 0xb8000
-	struct _terminal_cell *const buffer = (struct _terminal_cell *)0xb8000;
+	volatile struct _terminal_cell *const buffer = (struct _terminal_cell *)0xb8000;
 	// constructing cell
 	struct _terminal_cell cell = _terminal_cell_new(ch, fg, bg);
 	// calculating index
